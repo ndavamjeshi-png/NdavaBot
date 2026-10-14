@@ -5,70 +5,93 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NdavaGoldBot</title>
+<script src="https://s3.tradingview.com/tv.js"></script>
 <style>
-body{margin:0;background:#101827;color:white;font-family:Arial,sans-serif;padding:20px}
-.card{background:#1d293b;padding:18px;border-radius:14px;margin:14px 0}
-h1{color:#55e6a5}
-button,select{padding:14px;border:0;border-radius:8px;width:100%;font-size:16px;margin-top:10px}
-button{background:#20c997;color:#071b16;font-weight:bold}
+body{margin:0;padding:16px;background:#0b1220;color:#fff;font-family:Arial,sans-serif}
+h1{color:#36e5a0;margin-bottom:4px}
+.card{background:#172337;padding:16px;border-radius:14px;margin:14px 0}
 .price{font-size:32px;font-weight:bold}
-.small{color:#b9c5d6;font-size:14px}
+button,select{width:100%;padding:14px;margin-top:10px;border:0;border-radius:8px;font-size:16px}
+button{background:#36e5a0;color:#07150f;font-weight:bold}
+select{background:#26364d;color:white}
+.small{font-size:13px;color:#b9c7d9}
+#signal{font-size:24px}
+#chart{height:420px;width:100%}
 </style>
 </head>
 <body>
 <h1>NdavaGoldBot</h1>
-<p>Forex Signal Dashboard</p>
+<p class="small">Forex Signal Dashboard</p>
 
 <div class="card">
 <label>Chagua soko</label>
-<select id="market">
-<option value="XAUUSD">Gold (XAU/USD)</option>
+<select id="market" onchange="changeMarket()">
+<option value="OANDA:XAUUSD">Gold (XAU/USD)</option>
+<option value="OANDA:EURUSD">EUR/USD</option>
+<option value="OANDA:GBPUSD">GBP/USD</option>
+<option value="OANDA:USDJPY">USD/JPY</option>
 </select>
 <p>Bei ya soko</p>
-<div class="price" id="price">Inapakia...</div>
-<p class="small" id="time">Inatafuta bei...</p>
-<button onclick="refresh()">Sasisha Bei na Uchambuzi</button>
+<div class="price" id="price">Fungua chart kuona bei</div>
+<p class="small">Bei ya chart inaweza kutofautiana na chanzo kingine.</p>
+</div>
+
+<div class="card">
+<h3>Chart ya Soko</h3>
+<div id="chart"></div>
 </div>
 
 <div class="card">
 <h3>Uchambuzi wa Soko</h3>
-<h2 id="signal">SUBIRI DATA</h2>
-<p id="reason">Inatafuta bei halisi ya Gold.</p>
+<h2 id="signal">SUBIRI</h2>
+<p id="reason">Subiri data za soko zithibitishwe.</p>
 <p>Entry: <b id="entry">--</b></p>
 <p>Stop Loss: <b id="sl">--</b></p>
 <p>Take Profit: <b id="tp">--</b></p>
-<p class="small" id="count">Data bado haijapatikana.</p>
+<button onclick="refreshAnalysis()">Sasisha Uchambuzi</button>
+<p class="small">Chart ni ya TradingView. Ishara hazitolewi moja kwa moja na chart hii. Hakuna biashara inayofunguliwa na bot.</p>
 </div>
 
-<p class="small">Toleo la majaribio. Bei pekee haitoshi kuthibitisha BUY au SELL. Bot hii haifungui biashara.</p>
-
 <script>
-let prices=[];
-async function refresh(){
-document.getElementById("signal").textContent="SUBIRI DATA";
-document.getElementById("reason").textContent="Inatafuta bei mpya...";
-try{
-const response=await fetch("https://api.gold-api.com/price/XAU");
-if(!response.ok) throw new Error("Bei haipatikani");
-const data=await response.json();
-const p=Number(data.price);
-if(!Number.isFinite(p)||p<=0) throw new Error("Bei si sahihi");
-document.getElementById("price").textContent="$"+p.toFixed(2);
-document.getElementById("entry").textContent=p.toFixed(2);
-document.getElementById("time").textContent="Bei imepatikana. Muda: "+new Date().toLocaleTimeString();
-if(prices.length===0||prices[prices.length-1]!==p) prices.push(p);
-if(prices.length>100) prices.shift();
-document.getElementById("count").textContent="Bei tofauti zilizorekodiwa: "+prices.length;
-document.getElementById("sl").textContent="--";
-document.getElementById("tp").textContent="--";
-document.getElementById("reason").textContent="Bei imepatikana, lakini tunahitaji data za mishumaa rasmi kabla ya uchambuzi.";
-}catch(e){
-document.getElementById("price").textContent="Bei haipatikani";
-document.getElementById("reason").textContent="Angalia intaneti na ujaribu tena.";
-document.getElementById("time").textContent="Imeshindwa kupata bei.";
+let widget;
+function changeMarket(){
+ const symbol=document.getElementById("market").value;
+ document.getElementById("signal").textContent="SUBIRI";
+ document.getElementById("reason").textContent="Chart imebadilishwa. Thibitisha data kabla ya biashara.";
+ document.getElementById("entry").textContent="--";
+ document.getElementById("sl").textContent="--";
+ document.getElementById("tp").textContent="--";
+ document.getElementById("price").textContent="Angalia bei kwenye chart";
+ loadChart(symbol);
 }
+function loadChart(symbol){
+ document.getElementById("chart").innerHTML="";
+ if(typeof TradingView==="undefined"){
+ document.getElementById("chart").innerHTML="Chart haijapakia. Angalia intaneti.";
+ return;
+ }
+ new TradingView.widget({
+ autosize:true,
+ symbol:symbol,
+ interval:"5",
+ timezone:"Africa/Dar_es_Salaam",
+ theme:"dark",
+ style:"1",
+ locale:"en",
+ enable_publishing:false,
+ allow_symbol_change:false,
+ container_id:"chart",
+ hide_side_toolbar:true
+ });
 }
-refresh();
+function refreshAnalysis(){
+ document.getElementById("signal").textContent="SUBIRI";
+ document.getElementById("reason").textContent="Chart inaonyesha data za soko. Uchambuzi wa BUY/SELL haujaunganishwa na data rasmi za mishumaa bado.";
+ document.getElementById("entry").textContent="--";
+ document.getElementById("sl").textContent="--";
+ document.getElementById("tp").textContent="--";
+}
+loadChart(document.getElementById("market").value);
 </script>
 </body>
 </html>
