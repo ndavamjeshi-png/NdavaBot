@@ -2,77 +2,135 @@
 <html lang="sw">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NdavaGoldBot</title>
 <style>
-body{margin:0;background:#101827;color:white;font-family:Arial;padding:18px}
-h1{color:#f5c542}
-.card{background:#1d293b;padding:16px;border-radius:12px;margin:14px 0}
-select,button{width:100%;padding:13px;margin-top:10px;border-radius:8px;font-size:16px}
-button{background:#f5c542;border:0;font-weight:bold}
-.small{color:#b8c2d1;font-size:13px}
+*{box-sizing:border-box}
+body{margin:0;background:#08111f;color:#fff;font-family:Arial,sans-serif;padding:18px}
+header{color:#f5c542;font-size:27px;font-weight:bold}
+p{color:#b8c4d8}
+.card{background:#142238;border:1px solid #293b54;border-radius:15px;padding:17px;margin:15px 0}
+label{display:block;margin:12px 0 8px}
+select,button{width:100%;padding:14px;border-radius:9px;font-size:16px}
+select{background:#091525;color:white;border:1px solid #52647d}
+button{background:#f5c542;color:#101827;border:0;font-weight:bold;margin-top:12px}
+.price{font-size:29px;font-weight:bold;color:#f5c542}
+.status{font-size:20px;font-weight:bold}
+.small{font-size:13px;color:#aab8cc}
 </style>
 </head>
 <body>
-<h1>NdavaGoldBot</h1>
+<header>NDAVA GOLDBOT</header>
 <p>Forex Signal Dashboard</p>
 
 <div class="card">
-<h3>Chagua soko</h3>
+<label for="market">Chagua soko</label>
 <select id="market">
 <option value="XAU/USD">Gold (XAU/USD)</option>
-<option value="EUR/USD">EUR/USD</option>
-<option value="GBP/USD">GBP/USD</option>
-<option value="USD/JPY">USD/JPY</option>
-<option value="BTC/USDT">Bitcoin (BTC/USDT)</option>
-<option value="ETH/USDT">Ethereum (ETH/USDT)</option>
+<option value="BTCUSDT">Bitcoin (BTC/USDT)</option>
+<option value="ETHUSDT">Ethereum (ETH/USDT)</option>
+<option value="BNBUSDT">BNB (BNB/USDT)</option>
+<option value="SOLUSDT">Solana (SOL/USDT)</option>
+<option value="XRPUSDT">XRP (XRP/USDT)</option>
+<option value="EURUSD">EUR/USD</option>
+<option value="GBPUSD">GBP/USD</option>
+<option value="USDJPY">USD/JPY</option>
 </select>
-<button onclick="analyze()">Chambua soko</button>
-<h2 id="signal">SUBIRI DATA</h2>
-<p id="detail">Bonyeza Chambua soko kupata hali ya data.</p>
+<button onclick="getPrice()">PATA BEI NA CHAMBUA</button>
 </div>
 
 <div class="card">
-<h3>Hali ya bot</h3>
-<p id="status">Tayari kuanza uchambuzi.</p>
-<p class="small">Bot hii haifungui trade yenyewe. Ishara si ushauri wa kifedha.</p>
+<p>Bei ya soko</p>
+<div class="price" id="price">Inasubiri data...</div>
+<p id="updated">Haijaunganishwa</p>
 </div>
 
+<div class="card">
+<p>Hali ya uchambuzi</p>
+<div class="status" id="signal">SUBIRI DATA</div>
+<p id="details">Bonyeza kitufe ili kuanza.</p>
+<p id="levels"></p>
+</div>
+
+<div class="card">
+<p>Hali ya bot</p>
+<div id="connection">Tayari kuanza.</div>
+<p class="small">Bei hutegemea upatikanaji wa huduma ya data. Gold na Forex zinaweza kuhitaji chanzo tofauti.</p>
+</div>
+
+<p class="small">NdavaGoldBot haifungui trade yenyewe. Ishara ni za majaribio, si ushauri wa kifedha.</p>
+
 <script>
-async function analyze(){
- const m=document.getElementById("market").value;
- const s=document.getElementById("signal");
- const d=document.getElementById("detail");
- const st=document.getElementById("status");
- s.textContent="INACHAMBUA...";
- d.textContent="Inatafuta data ya soko.";
- if(!["BTC/USDT","ETH/USDT"].includes(m)){
-   s.textContent="DATA HAJAUNGANISHWA";
-   d.textContent="Bei halisi ya "+m+" bado haijaunganishwa. Hakuna ishara ya kununua au kuuza.";
-   st.textContent="Chagua crypto kwa jaribio la data ya Binance.";
-   return;
- }
+async function getPrice(){
+ const market=document.getElementById('market').value;
+ const priceEl=document.getElementById('price');
+ const signalEl=document.getElementById('signal');
+ const details=document.getElementById('details');
+ const levels=document.getElementById('levels');
+ const connection=document.getElementById('connection');
+
+ priceEl.textContent='Inatafuta bei...';
+ signalEl.textContent='SUBIRI DATA';
+ details.textContent='Inajaribu kuunganisha...';
+ levels.textContent='';
+ connection.textContent='Inaunganisha huduma ya data.';
+
  try{
-   const symbol=m.replace("/","");
-   const url="https://api.binance.com/api/v3/klines?symbol="+symbol+"&interval=1m&limit=60";
-   const r=await fetch(url);
-   if(!r.ok) throw Error("Data haipatikani");
-   const rows=await r.json();
-   const closes=rows.slice(0,-1).map(x=>Number(x[4]));
-   if(closes.length<30) throw Error("Data haitoshi");
-   const avg=n=>closes.slice(-n).reduce((a,b)=>a+b,0)/n;
-   const fast=avg(9), slow=avg(21);
-   let change=closes[closes.length-1]-closes[closes.length-15];
-   let result="SUBIRI";
-   if(fast>slow&&change>0) result="BUY";
-   if(fast<slow&&change<0) result="SELL";
-   s.textContent=result;
-   d.textContent="Soko: "+m+" | Bei ya mwisho: "+closes[closes.length-1]+" | EMA9: "+fast.toFixed(4)+" | EMA21: "+slow.toFixed(4);
-   st.textContent="Data ya Binance imepatikana. Uchambuzi ni wa majaribio.";
- }catch(e){
-   s.textContent="DATA HAIJAPATIKANA";
-   d.textContent="Imeshindikana kupata data. Jaribu tena baadaye.";
-   st.textContent="Angalia intaneti yako.";
+  let url='';
+  if(market==='XAU/USD'){
+   url='https://api.gold-api.com/price/XAU';
+  }else if(market==='EURUSD'||market==='GBPUSD'||market==='USDJPY'){
+   throw new Error('Bei ya Forex hii haijaunganishwa. Chagua Gold au crypto kwa jaribio.');
+  }else{
+   url='https://api.binance.com/api/v3/klines?symbol='+market+'&interval=1m&limit=30';
+  }
+
+  const response=await fetch(url);
+  if(!response.ok) throw new Error('Huduma ya bei haijajibu. Jaribu tena.');
+  const data=await response.json();
+  let price, closes=[];
+
+  if(market==='XAU/USD'){
+   price=Number(data.price);
+   if(!Number.isFinite(price)) throw new Error('Bei haijapatikana.');
+  }else{
+   closes=data.map(c=>Number(c[4]));
+   price=closes[closes.length-1];
+  }
+
+  priceEl.textContent=price.toLocaleString('en-US',{
+   minimumFractionDigits:2,maximumFractionDigits:5
+  });
+  document.getElementById('updated').textContent=
+   'Bei iliyopokelewa: '+new Date().toLocaleTimeString();
+  connection.textContent='Data imepokelewa.';
+
+  if(closes.length>=22){
+   const ema=(arr,period)=>{
+    const k=2/(period+1);
+    return arr.slice(0,period).reduce((a,b)=>a+b,0)/period;
+   };
+   const fast=closes.slice(-9).reduce((a,b)=>a+b,0)/9;
+   const slow=closes.slice(-21).reduce((a,b)=>a+b,0)/21;
+   if(fast>slow){
+    signalEl.textContent='BUY (MAJARIBIO)';
+    details.textContent='Wastani wa bei za hivi karibuni uko juu ya wastani mrefu.';
+   }else if(fast<slow){
+    signalEl.textContent='SELL (MAJARIBIO)';
+    details.textContent='Wastani wa bei za hivi karibuni uko chini ya wastani mrefu.';
+   }else{
+    signalEl.textContent='SUBIRI';
+    details.textContent='Hakuna mwelekeo ulio wazi.';
+   }
+  }else{
+   signalEl.textContent='SUBIRI DATA';
+   details.textContent='Bei imepatikana, lakini data haitoshi kwa uchambuzi.';
+  }
+ }catch(error){
+  priceEl.textContent='Haijapatikana';
+  signalEl.textContent='SUBIRI DATA';
+  details.textContent=error.message;
+  connection.textContent='Data haijaunganishwa.';
  }
 }
 </script>
