@@ -5,35 +5,38 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NdavaGoldBot</title>
-<script src="https://s3.tradingview.com/tv.js"></script>
 <style>
-body{margin:0;padding:16px;background:#0b1220;color:#fff;font-family:Arial,sans-serif}
-h1{color:#36e5a0;margin-bottom:4px}
-.card{background:#172337;padding:16px;border-radius:14px;margin:14px 0}
-.price{font-size:32px;font-weight:bold}
-button,select{width:100%;padding:14px;margin-top:10px;border:0;border-radius:8px;font-size:16px}
-button{background:#36e5a0;color:#07150f;font-weight:bold}
-select{background:#26364d;color:white}
-.small{font-size:13px;color:#b9c7d9}
-#signal{font-size:24px}
-#chart{height:420px;width:100%}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;background:#101827;color:white;font-family:Arial,sans-serif}
+main{max-width:760px;margin:auto}
+.card{background:#1b2638;padding:16px;border-radius:14px;margin:14px 0}
+h2{color:#52e0ad}
+.small{color:#b7c3d5;font-size:13px;line-height:1.6}
+.price{font-size:28px;font-weight:bold}
+select,button{width:100%;padding:13px;border:0;border-radius:9px;margin-top:10px;font-size:16px}
+button{background:#22c995;font-weight:bold}
+iframe{width:100%;height:380px;border:0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.value{font-size:19px;font-weight:bold}
 </style>
 </head>
 <body>
-<h1>NdavaGoldBot</h1>
-<p class="small">Forex Signal Dashboard</p>
+<main>
+<h2>NdavaGoldBot</h2>
+<p>Forex Signal Dashboard</p>
 
 <div class="card">
 <label>Chagua soko</label>
-<select id="market" onchange="changeMarket()">
+<select id="market">
 <option value="OANDA:XAUUSD">Gold (XAU/USD)</option>
 <option value="OANDA:EURUSD">EUR/USD</option>
 <option value="OANDA:GBPUSD">GBP/USD</option>
 <option value="OANDA:USDJPY">USD/JPY</option>
 </select>
 <p>Bei ya soko</p>
-<div class="price" id="price">Fungua chart kuona bei</div>
-<p class="small">Bei ya chart inaweza kutofautiana na chanzo kingine.</p>
+<div class="price" id="price">Inatafuta bei...</div>
+<p class="small" id="time">Subiri taarifa za soko.</p>
+<button onclick="refresh()">Sasisha Bei na Uchambuzi</button>
 </div>
 
 <div class="card">
@@ -43,55 +46,75 @@ select{background:#26364d;color:white}
 
 <div class="card">
 <h3>Uchambuzi wa Soko</h3>
-<h2 id="signal">SUBIRI</h2>
-<p id="reason">Subiri data za soko zithibitishwe.</p>
-<p>Entry: <b id="entry">--</b></p>
-<p>Stop Loss: <b id="sl">--</b></p>
-<p>Take Profit: <b id="tp">--</b></p>
-<button onclick="refreshAnalysis()">Sasisha Uchambuzi</button>
-<p class="small">Chart ni ya TradingView. Ishara hazitolewi moja kwa moja na chart hii. Hakuna biashara inayofunguliwa na bot.</p>
+<div class="value" id="signal">SUBIRI</div>
+<p class="small" id="reason">Inasubiri data za kutosha.</p>
+<div class="grid">
+<div><p>Entry</p><div id="entry">--</div></div>
+<div><p>Stop Loss</p><div id="sl">--</div></div>
+<div><p>Take Profit</p><div id="tp">--</div></div>
+<div><p>Bei zilizorekodiwa</p><div id="count">0</div></div>
+</div>
 </div>
 
+<div class="card">
+<p class="small">Tahadhari: Uchambuzi huu wa majaribio si ishara rasmi za biashara. Bei zilizokusanywa hazichukui nafasi ya mishumaa rasmi. Hakuna biashara inayofunguliwa na bot hii.</p>
+</div>
+</main>
+
 <script>
-let widget;
-function changeMarket(){
- const symbol=document.getElementById("market").value;
- document.getElementById("signal").textContent="SUBIRI";
- document.getElementById("reason").textContent="Chart imebadilishwa. Thibitisha data kabla ya biashara.";
- document.getElementById("entry").textContent="--";
- document.getElementById("sl").textContent="--";
- document.getElementById("tp").textContent="--";
- document.getElementById("price").textContent="Angalia bei kwenye chart";
- loadChart(symbol);
+const $=id=>document.getElementById(id);
+let prices=[];
+
+function chart(){
+ const s=$("market").value;
+ $("chart").innerHTML="";
+ const f=document.createElement("iframe");
+ f.title="Chart ya soko";
+ f.src="https://www.tradingview.com/widgetembed/?symbol="+encodeURIComponent(s)+"&interval=5&theme=dark&style=1&timezone=Africa%2FDar_es_Salaam";
+ $("chart").appendChild(f);
 }
-function loadChart(symbol){
- document.getElementById("chart").innerHTML="";
- if(typeof TradingView==="undefined"){
- document.getElementById("chart").innerHTML="Chart haijapakia. Angalia intaneti.";
- return;
+
+async function refresh(){
+ chart();
+ const s=$("market").value;
+ $("signal").textContent="SUBIRI";
+ $("entry").textContent="--";
+ $("sl").textContent="--";
+ $("tp").textContent="--";
+
+ if(s!=="OANDA:XAUUSD"){
+  $("price").textContent="Angalia bei kwenye chart";
+  $("time").textContent="Chanzo cha bei hakijaunganishwa kwa soko hili.";
+  $("reason").textContent="Uchambuzi unasubiri data za bei.";
+  return;
  }
- new TradingView.widget({
- autosize:true,
- symbol:symbol,
- interval:"5",
- timezone:"Africa/Dar_es_Salaam",
- theme:"dark",
- style:"1",
- locale:"en",
- enable_publishing:false,
- allow_symbol_change:false,
- container_id:"chart",
- hide_side_toolbar:true
- });
+
+ try{
+  const r=await fetch("https://api.gold-api.com/price/XAU");
+  if(!r.ok) throw Error();
+  const d=await r.json();
+  const p=Number(d.price);
+  if(!Number.isFinite(p)) throw Error();
+
+  $("price").textContent="$"+p.toFixed(2);
+  $("time").textContent="Bei imepatikana: "+new Date().toLocaleTimeString("sw-TZ");
+
+  if(prices.length===0||prices[prices.length-1]!==p) prices.push(p);
+  if(prices.length>100) prices.shift();
+  $("count").textContent=prices.length;
+
+  $("reason").textContent="Bei imepatikana, lakini data za mishumaa rasmi na viashiria vya kiufundi bado hazijaunganishwa. Hakuna BUY au SELL iliyothibitishwa.";
+
+ }catch(e){
+  $("price").textContent="Bei haipatikani";
+  $("time").textContent="Angalia intaneti kisha ujaribu tena.";
+  $("reason").textContent="Subiri chanzo cha bei kipatikane.";
+ }
 }
-function refreshAnalysis(){
- document.getElementById("signal").textContent="SUBIRI";
- document.getElementById("reason").textContent="Chart inaonyesha data za soko. Uchambuzi wa BUY/SELL haujaunganishwa na data rasmi za mishumaa bado.";
- document.getElementById("entry").textContent="--";
- document.getElementById("sl").textContent="--";
- document.getElementById("tp").textContent="--";
-}
-loadChart(document.getElementById("market").value);
+
+$("market").addEventListener("change",refresh);
+chart();
+refresh();
 </script>
 </body>
 </html>
