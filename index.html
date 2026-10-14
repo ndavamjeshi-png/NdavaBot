@@ -1,20 +1,18 @@
-
 <!DOCTYPE html>
 <html lang="sw">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NdavaGoldBot</title>
 <style>
-body{margin:0;padding:18px;background:#08111f;color:white;font-family:Arial}
-h1{color:#f5c542}
-.card{background:#17263d;padding:18px;border-radius:14px;margin:15px 0}
-select,button{width:100%;padding:14px;margin-top:10px;border-radius:9px;font-size:16px}
-select{background:#091525;color:white}
-button{background:#f5c542;font-weight:bold;border:0}
-.price{font-size:29px;color:#f5c542;font-weight:bold}
-.status{font-size:21px;font-weight:bold}
-small{color:#bdc8d8}
+body{margin:0;background:#101827;color:white;font-family:Arial,sans-serif;padding:18px}
+.card{background:#1d293b;padding:18px;border-radius:14px;margin:14px 0}
+h1{color:#f4c542;font-size:26px}
+button,select{width:100%;padding:14px;margin-top:12px;border-radius:9px;border:0;font-size:16px}
+button{background:#f4c542;font-weight:bold}
+.price{font-size:30px;color:#f4c542;font-weight:bold}
+.small{color:#b8c4d8;font-size:13px;line-height:1.6}
+.signal{font-size:24px;font-weight:bold}
 </style>
 </head>
 <body>
@@ -22,99 +20,113 @@ small{color:#bdc8d8}
 <p>Forex Signal Dashboard</p>
 
 <div class="card">
-<label for="market">Chagua soko</label>
+<label>Chagua soko</label>
 <select id="market">
 <option value="XAU">Gold (XAU/USD)</option>
-<option value="BTCUSDT">Bitcoin</option>
-<option value="ETHUSDT">Ethereum</option>
-<option value="BNBUSDT">BNB</option>
-<option value="SOLUSDT">Solana</option>
+<option value="BTCUSDT">Bitcoin (BTC/USDT)</option>
+<option value="ETHUSDT">Ethereum (ETH/USDT)</option>
+<option value="BNBUSDT">BNB (BNB/USDT)</option>
+<option value="SOLUSDT">Solana (SOL/USDT)</option>
 </select>
 <button onclick="analyze()">CHAMBUA SOKO</button>
 </div>
 
 <div class="card">
 <p>Bei ya soko</p>
-<div id="price" class="price">Inasubiri data...</div>
-<p id="time"><small>Bado haijaunganishwa</small></p>
+<div class="price" id="price">Subiri data</div>
+<p id="time">Bado haijachambuliwa</p>
 </div>
 
 <div class="card">
 <p>Hali ya uchambuzi</p>
-<div id="signal" class="status">SUBIRI DATA</div>
-<p id="message">Bonyeza Chambua Soko.</p>
+<div class="signal" id="signal">SUBIRI DATA</div>
+<p id="details">Bonyeza CHAMBUA SOKO kupata taarifa.</p>
 </div>
 
 <div class="card">
 <p>Hali ya bot</p>
-<p id="connection">Tayari kuanza.</p>
-<small>Bot hii haitoi oda za biashara. Ishara ni za majaribio, si ushauri wa kifedha.</small>
+<p id="status">Tayari kusubiri data.</p>
 </div>
+
+<p class="small">
+Uchambuzi wa majaribio kwa wastani wa bei 9 na 21.
+Ishara si uhakika wa mwelekeo wa soko wala ushauri wa kifedha.
+Bot hii haitoi oda za biashara. Thibitisha taarifa kabla ya kufanya uamuzi.
+</p>
 
 <script>
 async function analyze(){
- const market=document.getElementById('market').value;
- const priceBox=document.getElementById('price');
- const signal=document.getElementById('signal');
- const message=document.getElementById('message');
- const connection=document.getElementById('connection');
-
- priceBox.textContent='Inatafuta bei...';
- signal.textContent='SUBIRI DATA';
- message.textContent='Inaunganisha na chanzo cha data...';
+ const market=document.getElementById("market").value;
+ const signal=document.getElementById("signal");
+ const details=document.getElementById("details");
+ const status=document.getElementById("status");
+ signal.textContent="INACHAMBUA...";
+ details.textContent="Inatafuta data ya soko.";
+ status.textContent="Inaunganisha na chanzo cha data.";
 
  try{
-  let price, closes=[];
+  let closes=[], currentPrice=0;
 
-  if(market==='XAU'){
-   const r=await fetch('https://api.gold-api.com/price/XAU');
-   if(!r.ok) throw Error('Gold-API haijatoa bei. Jaribu tena baadaye.');
+  if(market==="XAU"){
+   const r=await fetch("https://api.gold-api.com/price/XAU");
+   if(!r.ok) throw Error("Bei ya Gold haijapatikana.");
    const d=await r.json();
-   price=Number(d.price);
-  }else{
-   const r=await fetch(
-    'https://api.binance.com/api/v3/klines?symbol='+
-    market+'&interval=1m&limit=30'
-   );
-   if(!r.ok) throw Error('Binance haipatikani sasa.');
-   const d=await r.json();
-   closes=d.map(c=>Number(c[4]));
-   price=closes[closes.length-1];
-  }
+   currentPrice=Number(d.price);
+   if(!currentPrice) throw Error("Bei ya Gold si sahihi.");
 
-  if(!Number.isFinite(price)||price<=0)
-   throw Error('Bei halisi haijapatikana.');
+   const key="ndava_gold_prices";
+   let history=JSON.parse(localStorage.getItem(key)||"[]");
+   const now=Date.now();
+   const last=history.length?history[history.length-1]:null;
 
-  priceBox.textContent=price.toLocaleString('en-US',{
-   minimumFractionDigits:2,maximumFractionDigits:5
-  });
-  document.getElementById('time').textContent=
-   'Muda: '+new Date().toLocaleTimeString();
-  connection.textContent='Bei imepokelewa kutoka chanzo cha data.';
-
-  if(closes.length>=21){
-   const recent=closes.slice(-9).reduce((a,b)=>a+b,0)/9;
-   const longer=closes.slice(-21).reduce((a,b)=>a+b,0)/21;
-
-   if(recent>longer){
-    signal.textContent='BUY — MAJARIBIO';
-    message.textContent='Wastani mfupi uko juu ya wastani mrefu. Thibitisha mwenendo kabla ya kufanya uamuzi.';
-   }else if(recent<longer){
-    signal.textContent='SELL — MAJARIBIO';
-    message.textContent='Wastani mfupi uko chini ya wastani mrefu. Thibitisha mwenendo kabla ya kufanya uamuzi.';
-   }else{
-    signal.textContent='SUBIRI';
-    message.textContent='Mwelekeo haujaonekana wazi.';
+   if(!last || now-last.time>=60000){
+    history.push({price:currentPrice,time:now});
+    history=history.slice(-30);
+    localStorage.setItem(key,JSON.stringify(history));
    }
+   closes=history.map(x=>Number(x.price));
   }else{
-   signal.textContent='SUBIRI DATA';
-   message.textContent='Bei imepatikana; bado hakuna data ya kutosha kuchambua.';
+   const url="https://api.binance.com/api/v3/klines?symbol="+market+"&interval=1m&limit=30";
+   const r=await fetch(url);
+   if(!r.ok) throw Error("Data ya soko haijapatikana.");
+   const candles=await r.json();
+   closes=candles.map(c=>Number(c[4]));
+   currentPrice=closes[closes.length-1];
   }
+
+  document.getElementById("price").textContent=
+   currentPrice.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:4});
+  document.getElementById("time").textContent=
+   "Muda: "+new Date().toLocaleTimeString();
+
+  if(closes.length<21){
+   signal.textContent="SUBIRI DATA";
+   details.textContent=market==="XAU"
+    ?"Gold inahitaji angalau dakika 21 za kukusanya bei. Acha ukurasa wazi na uchambue tena baadaye."
+    :"Bado hakuna data ya kutosha kuchambua.";
+   status.textContent="Bei imepatikana; data inakusanywa.";
+   return;
+  }
+
+  const short=closes.slice(-9).reduce((a,b)=>a+b,0)/9;
+  const long=closes.slice(-21).reduce((a,b)=>a+b,0)/21;
+
+  if(short>long){
+   signal.textContent="BUY — MAJARIBIO";
+   details.textContent="Wastani mfupi uko juu ya wastani mrefu. Hii haithibitishi kuwa bei itapanda.";
+  }else if(short<long){
+   signal.textContent="SELL — MAJARIBIO";
+   details.textContent="Wastani mfupi uko chini ya wastani mrefu. Hii haithibitishi kuwa bei itashuka.";
+  }else{
+   signal.textContent="SUBIRI";
+   details.textContent="Wastani zinafanana. Hakuna mwelekeo wazi.";
+  }
+  status.textContent="Uchambuzi umekamilika. Hakuna oda iliyowekwa.";
+
  }catch(e){
-  priceBox.textContent='Haijapatikana';
-  signal.textContent='SUBIRI DATA';
-  message.textContent=e.message;
-  connection.textContent='Muunganisho haujafaulu. Hakuna ishara iliyothibitishwa.';
+  signal.textContent="SUBIRI DATA";
+  details.textContent="Imeshindwa kupata data. Angalia intaneti na ujaribu tena.";
+  status.textContent="Tatizo: "+e.message;
  }
 }
 </script>
