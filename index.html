@@ -1,74 +1,79 @@
-
 <!DOCTYPE html>
 <html lang="sw">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NdavaGoldBot</title>
 <style>
-body{margin:0;background:#101827;color:white;font-family:Arial,sans-serif;padding:18px}
-header{color:#f5c542;font-size:27px;font-weight:bold}
-.card{background:#1d293b;padding:18px;border-radius:14px;margin:15px 0}
-h2{margin-top:5px}
-select,button{padding:13px;border-radius:8px;border:0;width:100%;margin-top:10px;font-size:16px}
-button{background:#f5c542;color:#101827;font-weight:bold}
-.price{font-size:27px;color:#f5c542}
-.muted{color:#bdc8d8}
+body{margin:0;background:#101827;color:white;font-family:Arial;padding:18px}
+h1{color:#f5c542}
+.card{background:#1d293b;padding:16px;border-radius:12px;margin:14px 0}
+select,button{width:100%;padding:13px;margin-top:10px;border-radius:8px;font-size:16px}
+button{background:#f5c542;border:0;font-weight:bold}
+.small{color:#b8c2d1;font-size:13px}
 </style>
 </head>
 <body>
-<header>NDAVA GOLD BOT</header>
-<p class="muted">Gold · Forex · Crypto</p>
+<h1>NdavaGoldBot</h1>
+<p>Forex Signal Dashboard</p>
 
 <div class="card">
-<h2>Chagua soko</h2>
+<h3>Chagua soko</h3>
 <select id="market">
 <option value="XAU/USD">Gold (XAU/USD)</option>
 <option value="EUR/USD">EUR/USD</option>
 <option value="GBP/USD">GBP/USD</option>
 <option value="USD/JPY">USD/JPY</option>
-<option value="BTC/USD">Bitcoin (BTC/USD)</option>
-<option value="ETH/USD">Ethereum (ETH/USD)</option>
+<option value="BTC/USDT">Bitcoin (BTC/USDT)</option>
+<option value="ETH/USDT">Ethereum (ETH/USDT)</option>
 </select>
 <button onclick="analyze()">Chambua soko</button>
+<h2 id="signal">SUBIRI DATA</h2>
+<p id="detail">Bonyeza Chambua soko kupata hali ya data.</p>
 </div>
 
 <div class="card">
-<h2 id="pair">Gold (XAU/USD)</h2>
-<div class="price" id="signal">SUBIRI</div>
-<p id="detail">Bonyeza Chambua soko ili kuanza.</p>
-<p class="muted">Bei halisi haijaunganishwa bado.</p>
+<h3>Hali ya bot</h3>
+<p id="status">Tayari kuanza uchambuzi.</p>
+<p class="small">Bot hii haifungui trade yenyewe. Ishara si ushauri wa kifedha.</p>
 </div>
-
-<div class="card">
-<h2>Usimamizi wa hatari</h2>
-<label>Salio la akaunti ($)</label>
-<input id="balance" type="number" value="100" style="width:95%;padding:10px">
-<label>Hatari (%)</label>
-<input id="risk" type="number" value="1" min="0.1" max="5" step="0.1" style="width:95%;padding:10px">
-<button onclick="calcRisk()">Hesabu hatari</button>
-<p id="result">Hatari: $1.00</p>
-</div>
-
-<p class="muted">Toleo la mwanzo. Halifanyi biashara wala kutoa ishara za soko halisi bila kuunganishwa na data ya soko.</p>
 
 <script>
-function analyze(){
-const m=document.getElementById('market').value;
-document.getElementById('pair').textContent=m;
-document.getElementById('signal').textContent='SUBIRI';
-document.getElementById('detail').textContent=
-'Data ya '+m+' bado haijaunganishwa. Hakuna ishara ya kununua au kuuza iliyothibitishwa.';
-}
-function calcRisk(){
-const b=Number(document.getElementById('balance').value);
-const r=Number(document.getElementById('risk').value);
-if(b<=0||r<=0||r>5){
-document.getElementById('result').textContent='Weka salio na hatari sahihi (0.1%–5%).';
-return;
-}
-document.getElementById('result').textContent=
-'Hatari ya juu iliyochaguliwa: $'+(b*r/100).toFixed(2);
+async function analyze(){
+ const m=document.getElementById("market").value;
+ const s=document.getElementById("signal");
+ const d=document.getElementById("detail");
+ const st=document.getElementById("status");
+ s.textContent="INACHAMBUA...";
+ d.textContent="Inatafuta data ya soko.";
+ if(!["BTC/USDT","ETH/USDT"].includes(m)){
+   s.textContent="DATA HAJAUNGANISHWA";
+   d.textContent="Bei halisi ya "+m+" bado haijaunganishwa. Hakuna ishara ya kununua au kuuza.";
+   st.textContent="Chagua crypto kwa jaribio la data ya Binance.";
+   return;
+ }
+ try{
+   const symbol=m.replace("/","");
+   const url="https://api.binance.com/api/v3/klines?symbol="+symbol+"&interval=1m&limit=60";
+   const r=await fetch(url);
+   if(!r.ok) throw Error("Data haipatikani");
+   const rows=await r.json();
+   const closes=rows.slice(0,-1).map(x=>Number(x[4]));
+   if(closes.length<30) throw Error("Data haitoshi");
+   const avg=n=>closes.slice(-n).reduce((a,b)=>a+b,0)/n;
+   const fast=avg(9), slow=avg(21);
+   let change=closes[closes.length-1]-closes[closes.length-15];
+   let result="SUBIRI";
+   if(fast>slow&&change>0) result="BUY";
+   if(fast<slow&&change<0) result="SELL";
+   s.textContent=result;
+   d.textContent="Soko: "+m+" | Bei ya mwisho: "+closes[closes.length-1]+" | EMA9: "+fast.toFixed(4)+" | EMA21: "+slow.toFixed(4);
+   st.textContent="Data ya Binance imepatikana. Uchambuzi ni wa majaribio.";
+ }catch(e){
+   s.textContent="DATA HAIJAPATIKANA";
+   d.textContent="Imeshindikana kupata data. Jaribu tena baadaye.";
+   st.textContent="Angalia intaneti yako.";
+ }
 }
 </script>
 </body>
