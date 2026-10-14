@@ -1,0 +1,38 @@
+
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NdavaGoldBot</title>
+<style>
+body{background:#101827;color:white;font-family:Arial;padding:20px}
+.card{background:#1e293b;padding:20px;border-radius:15px;margin-top:15px}
+h1{color:#fbbf24}
+button{padding:14px;background:#fbbf24;border:0;border-radius:8px;font-weight:bold;width:100%}
+.price{font-size:28px;color:#fbbf24}
+</style>
+</head>
+<body>
+<h1>NdavaGoldBot</h1>
+<p>Forex Signal Dashboard</p>
+<div class="card">
+<h2>Gold (XAU/USD)</h2>
+<p>Bei ya soko</p>
+<div class="price" id="price">Inapakia...</div>
+<p id="signal">Inasubiri taarifa za soko</p>
+<button onclick="analyze()">Chambua soko</button>
+</div>
+<div class="card">
+<h3>Markets</h3>
+<p>Gold · Forex · Crypto</p>
+<p id="note">Hii ni dashboard ya kuanzia.</p>
+</div>
+<script>
+function analyze(){
+document.getElementById("signal").textContent="WAIT — Hakikisha una data halisi kabla ya kuingia sokoni.";
+document.getElementById("note").textContent="Hakuna trade inayofunguliwa na app hii.";
+}
+document.getElementById("price").textContent="Subiri data halisi";
+</script>
+</body>
+</html>
